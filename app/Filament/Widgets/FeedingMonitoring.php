@@ -74,6 +74,7 @@ class FeedingMonitoring extends BaseWidget
         $stage = $this->determineGrowthStage($record);
         $progress = match ($stage) {
             'Fingerling stage' => 33,
+            'Juvenile stage' => 50,
             'sub adult stage' => 66,
             'Adult stage' => 100,
             default => 0,

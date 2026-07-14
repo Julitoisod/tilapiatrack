@@ -55,7 +55,7 @@ class ViewChat extends ViewRecord
         $this->loadMessages();
 
         // Dispatch the event for real-time broadcasting
-      //  broadcast(new NewMessage($message));
+        broadcast(new NewMessage($message))->toOthers();
 
         // Refresh the messages
         $this->dispatch('refreshMessages');
