@@ -29,7 +29,7 @@ class FingerlingResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\select::make('fishpond_id')
+                Forms\Components\Select::make('fishpond_id')
                     ->options(function () {
                         return \App\Models\Fishpond::with('user')
                             ->get()

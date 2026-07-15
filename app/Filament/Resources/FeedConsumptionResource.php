@@ -34,7 +34,7 @@ class FeedConsumptionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\select::make('fingerling_id')
+                Forms\Components\Select::make('fingerling_id')
                     ->options(function () {
                         return \App\Models\Fingerling::with('fishpond.user')
                             ->get()
