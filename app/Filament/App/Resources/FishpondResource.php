@@ -128,8 +128,11 @@ class FishpondResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // Harvested ponds are archived out of the active list (they still exist
+        // in the DB and keep their harvest history).
         return parent::getEloquentQuery()
-            ->where('user_id', Auth::id());
+            ->where('user_id', Auth::id())
+            ->whereNull('harvested_at');
     }
 
     // public static function canCreate(): bool

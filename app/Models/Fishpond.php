@@ -16,16 +16,24 @@ class Fishpond extends Model
         'name',
         'size',
         'location',
-        'picture'
+        'picture',
+        'harvested_at',
     ];
 
     protected $casts = [
         'picture' => 'array',
+        'harvested_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Ponds that have not been harvested yet (still in an active cycle). */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('harvested_at');
     }
 
     public function getNameWithOwnerAttribute()
