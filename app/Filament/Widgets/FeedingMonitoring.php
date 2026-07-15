@@ -43,27 +43,44 @@ class FeedingMonitoring extends BaseWidget
             ]);
     }
 
+    /**
+     * Cumulative day boundaries for each stage, taken from the schedule's
+     * feeding program (weeks → days). Falls back to sane defaults if unset.
+     */
+    private function stageBoundaries($record): array
+    {
+        $p = $record->feedingProgram;
+        $weeks = fn ($v, $default) => ((int) ($v ?? 0)) ?: $default;
+
+        $f = $weeks($p?->fingerling_age_range, 4) * 7;
+        $j = $f + $weeks($p?->juvenile_age_range, 4) * 7;
+        $s = $j + $weeks($p?->subadult_age_range, 4) * 7;
+        $a = $s + $weeks($p?->adult_age_range, 4) * 7;
+
+        return ['fingerling' => $f, 'juvenile' => $j, 'subadult' => $s, 'total' => $a];
+    }
+
     private function determineGrowthStage($record): string
     {
         if (!$record || !$record->fingerling) {
             return 'Unknown';
         }
 
-        $age = $record->fingerling->age_in_days ?? 0;
-        
-        // Define age ranges for each stage
-        if ($age <= 30) {
+        $age = $record->fingerling->age_in_days;
+        $b = $this->stageBoundaries($record);
+
+        if ($age < $b['fingerling']) {
             return 'Fingerling stage';
-        } elseif ($age <= 60) {
+        } elseif ($age < $b['juvenile']) {
             return 'Juvenile stage';
-        } elseif ($age <= 90) {
-            return 'sub adult stage';
-        } else {
+        } elseif ($age < $b['subadult']) {
+            return 'Sub-adult stage';
+        } elseif ($age < $b['total']) {
             return 'Adult stage';
         }
-    }
 
-   
+        return 'Harvest ready';
+    }
 
     private function calculateProgress($record): ?array
     {
@@ -71,14 +88,11 @@ class FeedingMonitoring extends BaseWidget
             return null;
         }
 
-        $stage = $this->determineGrowthStage($record);
-        $progress = match ($stage) {
-            'Fingerling stage' => 33,
-            'Juvenile stage' => 50,
-            'sub adult stage' => 66,
-            'Adult stage' => 100,
-            default => 0,
-        };
+        $age = $record->fingerling->age_in_days;
+        $total = $this->stageBoundaries($record)['total'];
+
+        // Real elapsed progress through the whole grow-out, not a per-stage constant.
+        $progress = $total > 0 ? (int) min(100, round($age / $total * 100)) : 0;
 
         return [
             'progress' => $progress,
