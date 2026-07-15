@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources;
 use App\Filament\App\Resources\ChatResource\Pages;
 use App\Filament\App\Resources\ChatResource\RelationManagers;
 use App\Models\Chat;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -28,10 +29,17 @@ class ChatResource extends Resource
     {
         return $form
             ->schema([
+                // Beneficiary starts the conversation: they own the chat, and it's
+                // routed to an admin. ponytail: single-admin setup, first admin wins.
+                Forms\Components\Hidden::make('beneficiary_id')
+                    ->default(fn() => Auth::id()),
+                Forms\Components\Hidden::make('admin_id')
+                    ->default(fn() => User::where('role', 'admin')->value('id')),
                 Forms\Components\TextInput::make('subject')
                     ->required()
                     ->maxLength(255)
-                    ->disabled(),
+                    // Editable when starting a chat; locked once it exists (view page).
+                    ->disabled(fn($livewire) => $livewire instanceof Pages\ViewChat),
                 Forms\Components\View::make('filament.beneficiary.chat-box')
                     ->visible(fn($livewire) => $livewire instanceof Pages\ViewChat)
                     ->columnSpan('full'),
@@ -74,6 +82,7 @@ class ChatResource extends Resource
     {
         return [
             'index' => Pages\ListChats::route('/'),
+            'create' => Pages\CreateChat::route('/create'),
             'view' => Pages\ViewChat::route('/{record}'),
         ];
     }
