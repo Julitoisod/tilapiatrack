@@ -27,10 +27,18 @@ class Calendar extends Page
             ->get();
 
             $events = [];
-            $currentDate = Carbon::now()->startOfDay();
 
             foreach ($feedingPrograms as $program) {
-                $startDate = Carbon::parse($program->start_date);
+                // Anchor the whole schedule on when THIS fingerling was actually
+                // deployed, so each pond's calendar follows its own timeline.
+                // The old code read $program->start_date, which is never persisted
+                // (not fillable) → null → Carbon::parse(null) = today, which made
+                // every fingerling's calendar start today and look identical.
+                $startDate = Carbon::parse(
+                    $program->fingerling?->date_deployed
+                        ?? $program->start_date
+                        ?? $program->created_at
+                );
                 
                 // Process each growth stage
                 $stages = [
@@ -88,18 +96,17 @@ class Calendar extends Page
                             if (!$time) continue;
 
                             try {
+                                // Show the schedule in its real window (past & future)
+                                // so a pond deployed months ago still shows its timeline.
                                 $date = $currentStageDate->copy()->addDays($day);
-                                
-                                // Skip if date is before today
-                                if ($date->lt($currentDate)) {
-                                    continue;
-                                }
 
                                 $carbonTime = Carbon::createFromFormat('H:i:s', $time);
                                 $formattedTime = $carbonTime->format('h:i A');
 
                                 $events[] = [
-                                    'id' => $program->feedingProgram->id . '-' . $stageName . '-' . $day . '-' . $time,
+                                    // Key on the schedule id (unique) so events from
+                                    // different fingerlings sharing a program don't collide.
+                                    'id' => $program->id . '-' . $stageName . '-' . $day . '-' . $time,
                                     'title' => ucfirst($stageName) . ' Stage',
                                     'start' => $date->format('Y-m-d') . 'T' . $time,
                                     'backgroundColor' => $stageData['color'],
