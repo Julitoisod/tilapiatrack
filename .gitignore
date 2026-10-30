@@ -57,3 +57,4 @@ Thumbs.db
 .env.example
 node_modules
 
+.claude-deploy.json
